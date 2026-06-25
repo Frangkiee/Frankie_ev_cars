@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { carsData } from '@/data/cars';
+import { WeightRangeChart, WeightConsumptionChart } from '@/components/charts';
 
 function parseMinPrice(price: string): number {
   const parts = price.split('-');
@@ -176,6 +177,17 @@ export default function Page() {
             </table>
           </div>
         </div>
+
+        {/* Charts section */}
+        <section className="mt-8 sm:mt-10">
+          <h2 className="text-lg font-bold text-white mb-4">
+            数据分析
+          </h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+            <WeightRangeChart data={sortedData} />
+            <WeightConsumptionChart data={sortedData} />
+          </div>
+        </section>
 
         {/* Footer */}
         <footer className="mt-6 text-center text-xs text-[#444]">
