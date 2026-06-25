@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { WeightRangeChart, WeightConsumptionChart, QuarterTrendRangeChart, QuarterTrendConsumptionChart } from '@/components/charts';
+import { WeightRangeChart, WeightConsumptionChart } from '@/components/charts';
 
 interface CarRecord {
   id: number;
@@ -178,13 +178,6 @@ export default function Home() {
                 Q{q}汇总
               </Link>
             ))}
-            {/* Trend summary link */}
-            <Link
-              href="/2026/trend"
-              className="px-3 py-1 rounded text-xs font-medium whitespace-nowrap bg-[#00e5a0]/10 text-[#00e5a0] hover:bg-[#00e5a0]/20 transition-all border border-[#00e5a0]/30"
-            >
-              趋势汇总
-            </Link>
           </div>
         </div>
       </header>
@@ -293,24 +286,6 @@ export default function Home() {
               <div className="bg-[#111115] border border-[#2a2a3e] rounded-lg p-4">
                 <h3 className="text-sm font-semibold text-gray-300 mb-3">整备质量 vs 电耗</h3>
                 <WeightConsumptionChart data={sortedCars} />
-              </div>
-            </div>
-
-            {/* Quarterly Summary Charts */}
-            <div className="mb-8">
-              <h2 className="text-base font-semibold text-gray-200 mb-4 flex items-center gap-2">
-                <span className="w-1 h-4 bg-[#00e5a0] rounded-full"></span>
-                季度汇总对比
-              </h2>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-[#111115] border border-[#2a2a3e] rounded-lg p-4">
-                  <h3 className="text-sm font-semibold text-gray-300 mb-3">季度趋势：整备质量 vs 续航</h3>
-                  <QuarterTrendRangeChart data={sortedCars} />
-                </div>
-                <div className="bg-[#111115] border border-[#2a2a3e] rounded-lg p-4">
-                  <h3 className="text-sm font-semibold text-gray-300 mb-3">季度趋势：整备质量 vs 电耗</h3>
-                  <QuarterTrendConsumptionChart data={sortedCars} />
-                </div>
               </div>
             </div>
           </>
