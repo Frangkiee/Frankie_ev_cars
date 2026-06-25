@@ -19,11 +19,18 @@
 │   └── start.sh            # 生产环境启动脚本
 ├── src/
 │   ├── app/                # 页面路由与布局
-│   ├── components/ui/      # Shadcn UI 组件库
+│   │   ├── [year]/[month]/ # 月度动态页面
+│   │   ├── [year]/quarter/[quarter]/ # 季度汇总页面
+│   │   └── api/cars/       # 数据 API 路由
+│   ├── components/         # 组件
+│   │   ├── ui/             # Shadcn UI 组件库
+│   │   └── charts.tsx      # 散点图组件
 │   ├── hooks/              # 自定义 Hooks
 │   ├── lib/                # 工具库
 │   │   └── utils.ts        # 通用工具函数 (cn)
-│   └── server.ts           # 自定义服务端入口
+│   ├── server.ts           # 自定义服务端入口
+│   └── storage/database/   # Supabase 数据库
+│       └── shared/schema.ts # 数据库表结构定义
 ├── next.config.ts          # Next.js 配置
 ├── package.json            # 项目依赖管理
 └── tsconfig.json           # TypeScript 配置

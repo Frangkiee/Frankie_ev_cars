@@ -1,207 +1,130 @@
 'use client';
 
-import {
-  ScatterChart,
-  Scatter,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Label,
-  LabelList,
-} from 'recharts';
-import type { CarRecord } from '@/data/cars';
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-interface ChartPoint {
+interface CarData {
   name: string;
-  weight: number;
-  y: number;
+  group_name: string;
+  weight: string;
+  aer: string;
+  consumption: string;
+  price: string;
 }
 
-function parseFirstNum(val: string): number | null {
-  if (val === '-' || !val) return null;
-  const n = parseFloat(val.split('/')[0]);
-  return isNaN(n) ? null : n;
+interface ChartProps {
+  data: CarData[];
 }
 
-function parseMaxAER(aer: string): number | null {
-  if (aer === '-' || !aer) return null;
-  const nums = aer.match(/(\d+)/g);
-  if (!nums) return null;
-  return Math.max(...nums.map(Number));
+function parseFirstNumber(val: string): number | null {
+  if (!val || val === '-') return null;
+  const match = val.match(/[\d.]+/);
+  return match ? parseFloat(match[0]) : null;
 }
 
-function buildPoints(
-  data: CarRecord[],
-  yKey: 'aer' | 'consumption'
-): ChartPoint[] {
-  return data
-    .map((car) => {
-      const weight = parseFirstNum(car.weight);
-      const y =
-        yKey === 'aer'
-          ? parseMaxAER(car.aer)
-          : parseFirstNum(car.consumption);
-      if (weight === null || y === null) return null;
-      return { name: car.name, weight, y };
-    })
-    .filter((p): p is ChartPoint => p !== null);
-}
-
-function SimpleTooltip({
-  active,
-  payload,
-  yLabel,
-  yUnit,
-}: {
-  active?: boolean;
-  payload?: Array<{ payload: ChartPoint }>;
-  yLabel: string;
-  yUnit: string;
-}) {
+function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: CarData & { x: number; y: number } }> }) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   return (
-    <div className="rounded-md border border-white/10 bg-[#1a1a2e] px-2.5 py-1.5 text-xs">
-      <div className="text-white font-medium">{d.name}</div>
-      <div className="text-gray-400 mt-0.5">
-        {d.weight} kg &nbsp;/&nbsp; {d.y} {yUnit}
+    <div className="bg-[#1a1a2e] border border-[#00e5a0]/30 rounded-lg px-3 py-2 shadow-xl">
+      <p className="text-white font-semibold text-sm">{d.name}</p>
+      <p className="text-gray-400 text-xs">{d.group_name}</p>
+      <div className="mt-1 space-y-0.5">
+        <p className="text-[#00e5a0] text-xs">重量: {d.weight} kg</p>
+        {'aer' in d && <p className="text-[#00e5a0] text-xs">续航: {d.aer} km</p>}
+        {'consumption' in d && <p className="text-amber-400 text-xs">电耗: {d.consumption} kWh/100km</p>}
+        <p className="text-amber-400 text-xs">价格: {d.price} 万</p>
       </div>
     </div>
   );
 }
 
-const DOT = '#00e5a0';
+export function WeightRangeChart({ data }: ChartProps) {
+  const chartData = data
+    .map(car => {
+      const w = parseFirstNumber(car.weight);
+      const r = parseFirstNumber(car.aer);
+      if (w === null || r === null) return null;
+      return { ...car, x: w, y: r };
+    })
+    .filter(Boolean) as Array<CarData & { x: number; y: number }>;
 
-export function WeightRangeChart({ data }: { data: CarRecord[] }) {
-  const points = buildPoints(data, 'aer');
+  if (chartData.length === 0) {
+    return <div className="text-gray-500 text-center py-12">暂无可绘制的数据</div>;
+  }
 
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-[#111115] p-4 sm:p-5">
-      <h3 className="text-sm font-semibold text-white mb-0.5">
-        车重 vs 续航
-      </h3>
-      <p className="text-xs text-[#555] mb-3">
-        整备质量(kg) / CLTC最大续航(km)
-      </p>
-      <div className="h-[320px] sm:h-[380px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <ScatterChart margin={{ top: 10, right: 30, bottom: 20, left: 10 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-            <XAxis
-              type="number"
-              dataKey="weight"
-              domain={['dataMin - 100', 'dataMax + 100']}
-              tick={{ fill: '#555', fontSize: 11 }}
-              axisLine={{ stroke: 'rgba(255,255,255,0.06)' }}
-              tickLine={false}
-            >
-              <Label
-                value="整备质量 (kg)"
-                position="bottom"
-                offset={2}
-                style={{ fill: '#666', fontSize: 11 }}
-              />
-            </XAxis>
-            <YAxis
-              type="number"
-              dataKey="y"
-              domain={['dataMin - 40', 'dataMax + 40']}
-              tick={{ fill: '#555', fontSize: 11 }}
-              axisLine={{ stroke: 'rgba(255,255,255,0.06)' }}
-              tickLine={false}
-            >
-              <Label
-                value="续航 (km)"
-                angle={-90}
-                position="insideLeft"
-                offset={10}
-                style={{ fill: '#666', fontSize: 11 }}
-              />
-            </YAxis>
-            <Tooltip
-              content={<SimpleTooltip yLabel="续航" yUnit="km" />}
-              cursor={false}
-            />
-            <Scatter data={points} fill={DOT} r={4}>
-              <LabelList
-                dataKey="name"
-                position="right"
-                fill="#888"
-                fontSize={10}
-                offset={6}
-              />
-            </Scatter>
-          </ScatterChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
+    <ResponsiveContainer width="100%" height={360}>
+      <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 10 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3e" />
+        <XAxis
+          type="number"
+          dataKey="x"
+          name="整备质量"
+          unit=" kg"
+          tick={{ fill: '#a0a0a0', fontSize: 11 }}
+          axisLine={{ stroke: '#333' }}
+          tickLine={false}
+          label={{ value: '整备质量 (kg)', position: 'bottom', fill: '#888', fontSize: 12, offset: 0 }}
+        />
+        <YAxis
+          type="number"
+          dataKey="y"
+          name="续航"
+          unit=" km"
+          tick={{ fill: '#a0a0a0', fontSize: 11 }}
+          axisLine={{ stroke: '#333' }}
+          tickLine={false}
+          label={{ value: '续航 AER (km)', angle: -90, position: 'insideLeft', fill: '#888', fontSize: 12 }}
+        />
+        <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: '#00e5a0', opacity: 0.3 }} />
+        <Scatter data={chartData} fill="#00e5a0" fillOpacity={0.85} r={6} />
+      </ScatterChart>
+    </ResponsiveContainer>
   );
 }
 
-export function WeightConsumptionChart({ data }: { data: CarRecord[] }) {
-  const points = buildPoints(data, 'consumption');
+export function WeightConsumptionChart({ data }: ChartProps) {
+  const chartData = data
+    .map(car => {
+      const w = parseFirstNumber(car.weight);
+      const c = parseFirstNumber(car.consumption);
+      if (w === null || c === null) return null;
+      return { ...car, x: w, y: c };
+    })
+    .filter(Boolean) as Array<CarData & { x: number; y: number }>;
+
+  if (chartData.length === 0) {
+    return <div className="text-gray-500 text-center py-12">暂无可绘制的数据</div>;
+  }
 
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-[#111115] p-4 sm:p-5">
-      <h3 className="text-sm font-semibold text-white mb-0.5">
-        车重 vs 电耗
-      </h3>
-      <p className="text-xs text-[#555] mb-3">
-        整备质量(kg) / 百公里电耗(kWh/100km)
-      </p>
-      <div className="h-[320px] sm:h-[380px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <ScatterChart margin={{ top: 10, right: 30, bottom: 20, left: 10 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-            <XAxis
-              type="number"
-              dataKey="weight"
-              domain={['dataMin - 100', 'dataMax + 100']}
-              tick={{ fill: '#555', fontSize: 11 }}
-              axisLine={{ stroke: 'rgba(255,255,255,0.06)' }}
-              tickLine={false}
-            >
-              <Label
-                value="整备质量 (kg)"
-                position="bottom"
-                offset={2}
-                style={{ fill: '#666', fontSize: 11 }}
-              />
-            </XAxis>
-            <YAxis
-              type="number"
-              dataKey="y"
-              domain={['dataMin - 1', 'dataMax + 1']}
-              tick={{ fill: '#555', fontSize: 11 }}
-              axisLine={{ stroke: 'rgba(255,255,255,0.06)' }}
-              tickLine={false}
-            >
-              <Label
-                value="电耗 (kWh/100km)"
-                angle={-90}
-                position="insideLeft"
-                offset={10}
-                style={{ fill: '#666', fontSize: 11 }}
-              />
-            </YAxis>
-            <Tooltip
-              content={<SimpleTooltip yLabel="电耗" yUnit="kWh/100km" />}
-              cursor={false}
-            />
-            <Scatter data={points} fill={DOT} r={4}>
-              <LabelList
-                dataKey="name"
-                position="right"
-                fill="#888"
-                fontSize={10}
-                offset={6}
-              />
-            </Scatter>
-          </ScatterChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
+    <ResponsiveContainer width="100%" height={360}>
+      <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 10 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3e" />
+        <XAxis
+          type="number"
+          dataKey="x"
+          name="整备质量"
+          unit=" kg"
+          tick={{ fill: '#a0a0a0', fontSize: 11 }}
+          axisLine={{ stroke: '#333' }}
+          tickLine={false}
+          label={{ value: '整备质量 (kg)', position: 'bottom', fill: '#888', fontSize: 12, offset: 0 }}
+        />
+        <YAxis
+          type="number"
+          dataKey="y"
+          name="电耗"
+          unit=" kWh/100km"
+          tick={{ fill: '#a0a0a0', fontSize: 11 }}
+          axisLine={{ stroke: '#333' }}
+          tickLine={false}
+          domain={['dataMin - 1', 'dataMax + 1']}
+          label={{ value: '电耗 (kWh/100km)', angle: -90, position: 'insideLeft', fill: '#888', fontSize: 12 }}
+        />
+        <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: '#f59e0b', opacity: 0.3 }} />
+        <Scatter data={chartData} fill="#f59e0b" fillOpacity={0.85} r={6} />
+      </ScatterChart>
+    </ResponsiveContainer>
   );
 }
