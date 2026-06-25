@@ -88,13 +88,21 @@ function CarLabel({ x, y, name }: { x: number; y: number; name: string }) {
 // Custom legend component
 function QuarterLegend() {
   return (
-    <div className="flex justify-center gap-4 mt-2 flex-wrap">
-      {Object.entries(QUARTER_COLORS).map(([quarter, color]) => (
-        <div key={quarter} className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
-          <span className="text-xs text-gray-400">{QUARTER_NAMES[quarter as keyof typeof QUARTER_NAMES]}</span>
-        </div>
-      ))}
+    <div className="flex justify-center gap-6 mt-4 flex-wrap">
+      {Object.entries(QUARTER_COLORS).map(([quarter, color]) => {
+        const shape = QUARTER_SHAPES[quarter];
+        return (
+          <div key={quarter} className="flex items-center gap-2">
+            <svg width="16" height="16" viewBox="0 0 16 16">
+              {shape === 'circle' && <circle cx="8" cy="8" r="6" fill={color} />}
+              {shape === 'diamond' && <polygon points="8,2 14,8 8,14 2,8" fill={color} />}
+              {shape === 'square' && <rect x="2" y="2" width="12" height="12" fill={color} />}
+              {shape === 'triangle' && <polygon points="8,2 14,14 2,14" fill={color} />}
+            </svg>
+            <span className="text-xs text-gray-400">{QUARTER_NAMES[quarter as keyof typeof QUARTER_NAMES]}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -171,6 +179,22 @@ export function WeightRangeChart({ data }: ChartProps) {
 interface CombinedChartProps {
   data: CarData[];
 }
+
+// Quarter shape mapping - using Recharts built-in shapes
+const QUARTER_SHAPES: Record<string, 'circle' | 'square' | 'diamond' | 'triangle' | 'star' | 'pentagon'> = {
+  Q1: 'circle',
+  Q2: 'diamond',
+  Q3: 'square',
+  Q4: 'triangle',
+};
+
+// Quarter opacity for depth effect
+const QUARTER_OPACITY: Record<string, number> = {
+  Q1: 0.9,
+  Q2: 0.8,
+  Q3: 0.85,
+  Q4: 0.75,
+};
 
 export function CombinedQuarterChart({ data }: CombinedChartProps) {
   // Group data by quarter for both metrics
@@ -249,10 +273,11 @@ export function CombinedQuarterChart({ data }: CombinedChartProps) {
                   name={QUARTER_NAMES[quarter as keyof typeof QUARTER_NAMES]}
                   data={qData}
                   fill={QUARTER_COLORS[quarter as keyof typeof QUARTER_COLORS]}
-                  fillOpacity={0.85}
+                  fillOpacity={QUARTER_OPACITY[quarter]}
                   stroke={QUARTER_COLORS[quarter as keyof typeof QUARTER_COLORS]}
                   strokeWidth={1.5}
-                  shape="circle"
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  shape={QUARTER_SHAPES[quarter] as any}
                 />
               )
             ))}
@@ -300,10 +325,11 @@ export function CombinedQuarterChart({ data }: CombinedChartProps) {
                   name={QUARTER_NAMES[quarter as keyof typeof QUARTER_NAMES]}
                   data={qData}
                   fill={QUARTER_COLORS[quarter as keyof typeof QUARTER_COLORS]}
-                  fillOpacity={0.85}
+                  fillOpacity={QUARTER_OPACITY[quarter]}
                   stroke={QUARTER_COLORS[quarter as keyof typeof QUARTER_COLORS]}
                   strokeWidth={1.5}
-                  shape="circle"
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  shape={QUARTER_SHAPES[quarter] as any}
                 />
               )
             ))}
