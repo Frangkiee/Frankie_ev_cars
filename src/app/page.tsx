@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { WeightRangeChart, WeightConsumptionChart } from '@/components/charts';
+import { WeightRangeChart, WeightConsumptionChart, CombinedQuarterChart } from '@/components/charts';
 
 interface CarRecord {
   id: number;
@@ -287,6 +287,15 @@ export default function Home() {
                 <h3 className="text-sm font-semibold text-gray-300 mb-3">整备质量 vs 电耗</h3>
                 <WeightConsumptionChart data={sortedCars} />
               </div>
+            </div>
+
+            {/* Combined Chart */}
+            <div className="bg-[#111115] border border-[#2a2a3e] rounded-lg p-6 mb-8">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-gradient-to-r from-[#00e5a0] via-[#3b82f6] to-[#ec4899]"></span>
+                全年数据总览
+              </h3>
+              <CombinedQuarterChart data={sortedCars} />
             </div>
           </>
         )}

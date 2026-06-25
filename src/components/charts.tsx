@@ -167,6 +167,154 @@ export function WeightRangeChart({ data }: ChartProps) {
   );
 }
 
+// 综合散点图 - 同时展示车重-续航和车重-电耗
+interface CombinedChartProps {
+  data: CarData[];
+}
+
+export function CombinedQuarterChart({ data }: CombinedChartProps) {
+  // Group data by quarter for both metrics
+  const quarterRangeData: Record<string, Array<CarData & { x: number; y: number; name: string }>> = {
+    Q1: [], Q2: [], Q3: [], Q4: []
+  };
+  const quarterConsumptionData: Record<string, Array<CarData & { x: number; y: number; name: string }>> = {
+    Q1: [], Q2: [], Q3: [], Q4: []
+  };
+
+  data.forEach(car => {
+    const w = parseFirstNumber(car.weight);
+    const r = parseFirstNumber(car.aer);
+    const c = parseFirstNumber(car.consumption);
+    const quarter = getQuarter(car.month);
+    
+    if (w !== null && r !== null) {
+      quarterRangeData[quarter].push({ ...car, x: w, y: r });
+    }
+    if (w !== null && c !== null) {
+      quarterConsumptionData[quarter].push({ ...car, x: w, y: c });
+    }
+  });
+
+  const hasRangeData = Object.values(quarterRangeData).some(arr => arr.length > 0);
+  const hasConsumptionData = Object.values(quarterConsumptionData).some(arr => arr.length > 0);
+
+  if (!hasRangeData && !hasConsumptionData) {
+    return <div className="text-gray-500 text-center py-12">暂无可绘制的数据</div>;
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* 车重 vs 续航 */}
+      <div className="bg-gradient-to-br from-[#0a0a0a] to-[#111115] rounded-xl p-6 border border-[#2a2a3e]">
+        <h3 className="text-white text-lg font-semibold mb-4 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-[#00e5a0]"></span>
+          整备质量 vs 续航里程
+        </h3>
+        <ResponsiveContainer width="100%" height={400}>
+          <ScatterChart margin={{ top: 20, right: 40, bottom: 20, left: 10 }}>
+            <defs>
+              <linearGradient id="gridGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#1a1a2e" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="#0a0a0a" stopOpacity={0.1} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3e" strokeOpacity={0.5} />
+            <XAxis
+              type="number"
+              dataKey="x"
+              name="整备质量"
+              unit=" kg"
+              tick={{ fill: '#a0a0a0', fontSize: 11 }}
+              axisLine={{ stroke: '#333' }}
+              tickLine={false}
+              domain={['dataMin - 100', 'dataMax + 100']}
+              label={{ value: '整备质量 (kg)', position: 'bottom', fill: '#888', fontSize: 12, offset: 0 }}
+            />
+            <YAxis
+              type="number"
+              dataKey="y"
+              name="续航"
+              unit=" km"
+              tick={{ fill: '#a0a0a0', fontSize: 11 }}
+              axisLine={{ stroke: '#333' }}
+              tickLine={false}
+              domain={['dataMin - 50', 'dataMax + 50']}
+              label={{ value: '续航里程 (km)', angle: -90, position: 'insideLeft', fill: '#888', fontSize: 12 }}
+            />
+            <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: '#00e5a0', opacity: 0.3 }} />
+            {Object.entries(quarterRangeData).map(([quarter, qData]) => (
+              qData.length > 0 && (
+                <Scatter
+                  key={quarter}
+                  name={QUARTER_NAMES[quarter as keyof typeof QUARTER_NAMES]}
+                  data={qData}
+                  fill={QUARTER_COLORS[quarter as keyof typeof QUARTER_COLORS]}
+                  fillOpacity={0.85}
+                  stroke={QUARTER_COLORS[quarter as keyof typeof QUARTER_COLORS]}
+                  strokeWidth={1.5}
+                  shape="circle"
+                />
+              )
+            ))}
+          </ScatterChart>
+        </ResponsiveContainer>
+        <QuarterLegend />
+      </div>
+
+      {/* 车重 vs 电耗 */}
+      <div className="bg-gradient-to-br from-[#0a0a0a] to-[#111115] rounded-xl p-6 border border-[#2a2a3e]">
+        <h3 className="text-white text-lg font-semibold mb-4 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-[#f59e0b]"></span>
+          整备质量 vs 电耗
+        </h3>
+        <ResponsiveContainer width="100%" height={400}>
+          <ScatterChart margin={{ top: 20, right: 40, bottom: 20, left: 10 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3e" strokeOpacity={0.5} />
+            <XAxis
+              type="number"
+              dataKey="x"
+              name="整备质量"
+              unit=" kg"
+              tick={{ fill: '#a0a0a0', fontSize: 11 }}
+              axisLine={{ stroke: '#333' }}
+              tickLine={false}
+              domain={['dataMin - 100', 'dataMax + 100']}
+              label={{ value: '整备质量 (kg)', position: 'bottom', fill: '#888', fontSize: 12, offset: 0 }}
+            />
+            <YAxis
+              type="number"
+              dataKey="y"
+              name="电耗"
+              unit=" kWh/100km"
+              tick={{ fill: '#a0a0a0', fontSize: 11 }}
+              axisLine={{ stroke: '#333' }}
+              tickLine={false}
+              domain={['dataMin - 1', 'dataMax + 1']}
+              label={{ value: '电耗 (kWh/100km)', angle: -90, position: 'insideLeft', fill: '#888', fontSize: 12 }}
+            />
+            <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: '#f59e0b', opacity: 0.3 }} />
+            {Object.entries(quarterConsumptionData).map(([quarter, qData]) => (
+              qData.length > 0 && (
+                <Scatter
+                  key={quarter}
+                  name={QUARTER_NAMES[quarter as keyof typeof QUARTER_NAMES]}
+                  data={qData}
+                  fill={QUARTER_COLORS[quarter as keyof typeof QUARTER_COLORS]}
+                  fillOpacity={0.85}
+                  stroke={QUARTER_COLORS[quarter as keyof typeof QUARTER_COLORS]}
+                  strokeWidth={1.5}
+                  shape="circle"
+                />
+              )
+            ))}
+          </ScatterChart>
+        </ResponsiveContainer>
+        <QuarterLegend />
+      </div>
+    </div>
+  );
+}
+
 export function WeightConsumptionChart({ data }: ChartProps) {
   // Group data by quarter
   const quarterData: Record<string, Array<CarData & { x: number; y: number; name: string }>> = {
