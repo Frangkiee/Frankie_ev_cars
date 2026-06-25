@@ -40,6 +40,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ data: data || [], year: parseInt(year), month: parseInt(month) });
   }
 
+  // Get all data for a year (or all years if no year specified)
+  if (year) {
+    const { data, error } = await client
+      .from('monthly_cars')
+      .select('*')
+      .eq('year', parseInt(year))
+      .order('month', { ascending: true })
+      .order('price', { ascending: true });
+
+    if (error) throw new Error(`查询失败: ${error.message}`);
+    return NextResponse.json({ data: data || [], year: parseInt(year) });
+  }
+
   // Get all available months
   const { data, error } = await client
     .from('monthly_cars')
