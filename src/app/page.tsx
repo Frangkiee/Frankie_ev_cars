@@ -178,6 +178,13 @@ export default function Home() {
                 Q{q}汇总
               </Link>
             ))}
+            {/* Trend summary link */}
+            <Link
+              href="/2026/trend"
+              className="px-3 py-1 rounded text-xs font-medium whitespace-nowrap bg-[#00e5a0]/10 text-[#00e5a0] hover:bg-[#00e5a0]/20 transition-all border border-[#00e5a0]/30"
+            >
+              趋势汇总
+            </Link>
           </div>
         </div>
       </header>
