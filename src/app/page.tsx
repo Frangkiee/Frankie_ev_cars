@@ -178,6 +178,13 @@ export default function Home() {
                 Q{q}汇总
               </Link>
             ))}
+            {/* Charts summary link */}
+            <Link
+              href="/charts"
+              className="px-3 py-1 rounded text-xs font-medium whitespace-nowrap bg-[#1a1a2e]/50 text-cyan-400/70 hover:text-cyan-400 hover:bg-[#1a1a2e] transition-all border border-cyan-500/20"
+            >
+              图表汇总
+            </Link>
           </div>
         </div>
       </header>
