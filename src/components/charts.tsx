@@ -167,6 +167,182 @@ export function WeightRangeChart({ data }: ChartProps) {
   );
 }
 
+// ============ 季度汇总图表 ============
+
+interface QuarterSummaryData {
+  quarter: string;
+  avgWeight: number;
+  avgRange: number;
+  avgConsumption: number;
+  count: number;
+  color: string;
+}
+
+function calculateQuarterSummary(data: CarData[]): QuarterSummaryData[] {
+  const quarters: Record<string, { weights: number[]; ranges: number[]; consumptions: number[]; months: number[] }> = {
+    Q1: { weights: [], ranges: [], consumptions: [], months: [] },
+    Q2: { weights: [], ranges: [], consumptions: [], months: [] },
+    Q3: { weights: [], ranges: [], consumptions: [], months: [] },
+    Q4: { weights: [], ranges: [], consumptions: [], months: [] },
+  };
+
+  data.forEach(car => {
+    const q = getQuarter(car.month);
+    const weight = parseFirstNumber(car.weight);
+    const range = parseFirstNumber(car.aer);
+    const consumption = parseFirstNumber(car.consumption);
+    
+    if (car.month !== undefined) {
+      quarters[q].months.push(car.month);
+    }
+    if (weight) quarters[q].weights.push(weight);
+    if (range) quarters[q].ranges.push(range);
+    if (consumption) quarters[q].consumptions.push(consumption);
+  });
+
+  const avg = (arr: number[]) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+
+  return Object.entries(quarters)
+    .filter(([, q]) => q.months.length > 0)
+    .map(([quarter, q]) => ({
+      quarter,
+      avgWeight: Math.round(avg(q.weights)),
+      avgRange: Math.round(avg(q.ranges)),
+      avgConsumption: Math.round(avg(q.consumptions) * 10) / 10,
+      count: q.months.length,
+      color: QUARTER_COLORS[quarter as keyof typeof QUARTER_COLORS],
+    }));
+}
+
+interface QuarterSummaryTooltipProps {
+  active?: boolean;
+  payload?: Array<{ payload: QuarterSummaryData }>;
+}
+
+function QuarterSummaryTooltip({ active, payload }: QuarterSummaryTooltipProps) {
+  if (!active || !payload?.length) return null;
+  const data = payload[0].payload;
+  return (
+    <div className="bg-[#1a1a2e] border border-[#3a3a5e] rounded-lg px-3 py-2 text-xs shadow-xl">
+      <p className="text-white font-semibold mb-1">{QUARTER_NAMES[data.quarter as keyof typeof QUARTER_NAMES]}</p>
+      <p className="text-gray-300">车型数量: <span className="text-white font-mono">{data.count}款</span></p>
+      <p className="text-gray-300">平均整备质量: <span className="text-white font-mono">{data.avgWeight}kg</span></p>
+      <p className="text-gray-300">平均续航: <span className="text-white font-mono">{data.avgRange}km</span></p>
+      <p className="text-gray-300">平均电耗: <span className="text-white font-mono">{data.avgConsumption}kWh</span></p>
+    </div>
+  );
+}
+
+export function QuarterSummaryRangeChart({ data }: ChartProps) {
+  const summary = calculateQuarterSummary(data);
+  
+  if (summary.length === 0) {
+    return <div className="text-gray-500 text-sm text-center py-8">暂无数据</div>;
+  }
+
+  return (
+    <div>
+      <ResponsiveContainer width="100%" height={280}>
+        <ScatterChart margin={{ top: 20, right: 30, bottom: 30, left: 20 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#222" />
+          <XAxis
+            type="number"
+            dataKey="avgWeight"
+            name="平均整备质量"
+            unit=" kg"
+            tick={{ fill: '#a0a0a0', fontSize: 11 }}
+            axisLine={{ stroke: '#333' }}
+            tickLine={false}
+            domain={['dataMin - 50', 'dataMax + 50']}
+            label={{ value: '平均整备质量 (kg)', position: 'bottom', fill: '#888', fontSize: 12, offset: 0 }}
+          />
+          <YAxis
+            type="number"
+            dataKey="avgRange"
+            name="平均续航"
+            unit=" km"
+            tick={{ fill: '#a0a0a0', fontSize: 11 }}
+            axisLine={{ stroke: '#333' }}
+            tickLine={false}
+            domain={['dataMin - 30', 'dataMax + 30']}
+            label={{ value: '平均续航 (km)', angle: -90, position: 'insideLeft', fill: '#888', fontSize: 12 }}
+          />
+          <Tooltip content={<QuarterSummaryTooltip />} cursor={{ strokeDasharray: '3 3', stroke: '#666' }} />
+          <Scatter data={summary} fill="#00e5a0">
+            {summary.map((entry, index) => (
+              <circle key={`dot-${index}`} r={12} fill={entry.color} fillOpacity={0.9} />
+            ))}
+            <LabelList
+              dataKey="quarter"
+              position="top"
+              fill="#fff"
+              fontSize={11}
+              fontWeight="bold"
+              offset={10}
+            />
+          </Scatter>
+        </ScatterChart>
+      </ResponsiveContainer>
+      <QuarterLegend />
+    </div>
+  );
+}
+
+export function QuarterSummaryConsumptionChart({ data }: ChartProps) {
+  const summary = calculateQuarterSummary(data);
+  
+  if (summary.length === 0) {
+    return <div className="text-gray-500 text-sm text-center py-8">暂无数据</div>;
+  }
+
+  return (
+    <div>
+      <ResponsiveContainer width="100%" height={280}>
+        <ScatterChart margin={{ top: 20, right: 30, bottom: 30, left: 20 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#222" />
+          <XAxis
+            type="number"
+            dataKey="avgWeight"
+            name="平均整备质量"
+            unit=" kg"
+            tick={{ fill: '#a0a0a0', fontSize: 11 }}
+            axisLine={{ stroke: '#333' }}
+            tickLine={false}
+            domain={['dataMin - 50', 'dataMax + 50']}
+            label={{ value: '平均整备质量 (kg)', position: 'bottom', fill: '#888', fontSize: 12, offset: 0 }}
+          />
+          <YAxis
+            type="number"
+            dataKey="avgConsumption"
+            name="平均电耗"
+            unit=" kWh/100km"
+            tick={{ fill: '#a0a0a0', fontSize: 11 }}
+            axisLine={{ stroke: '#333' }}
+            tickLine={false}
+            domain={['dataMin - 1', 'dataMax + 1']}
+            label={{ value: '平均电耗 (kWh/100km)', angle: -90, position: 'insideLeft', fill: '#888', fontSize: 12 }}
+          />
+          <Tooltip content={<QuarterSummaryTooltip />} cursor={{ strokeDasharray: '3 3', stroke: '#666' }} />
+          <Scatter data={summary} fill="#f59e0b">
+            {summary.map((entry, index) => (
+              <circle key={`dot-${index}`} r={12} fill={entry.color} fillOpacity={0.9} />
+            ))}
+            <LabelList
+              dataKey="quarter"
+              position="top"
+              fill="#fff"
+              fontSize={11}
+              fontWeight="bold"
+              offset={10}
+            />
+          </Scatter>
+        </ScatterChart>
+      </ResponsiveContainer>
+      <QuarterLegend />
+    </div>
+  );
+}
+
 export function WeightConsumptionChart({ data }: ChartProps) {
   // Group data by quarter
   const quarterData: Record<string, Array<CarData & { x: number; y: number; name: string }>> = {

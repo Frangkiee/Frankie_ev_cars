@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { WeightRangeChart, WeightConsumptionChart } from '@/components/charts';
+import { WeightRangeChart, WeightConsumptionChart, QuarterSummaryRangeChart, QuarterSummaryConsumptionChart } from '@/components/charts';
 
 interface CarRecord {
   id: number;
@@ -286,6 +286,24 @@ export default function Home() {
               <div className="bg-[#111115] border border-[#2a2a3e] rounded-lg p-4">
                 <h3 className="text-sm font-semibold text-gray-300 mb-3">整备质量 vs 电耗</h3>
                 <WeightConsumptionChart data={sortedCars} />
+              </div>
+            </div>
+
+            {/* Quarterly Summary Charts */}
+            <div className="mb-8">
+              <h2 className="text-base font-semibold text-gray-200 mb-4 flex items-center gap-2">
+                <span className="w-1 h-4 bg-[#00e5a0] rounded-full"></span>
+                季度汇总对比
+              </h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-[#111115] border border-[#2a2a3e] rounded-lg p-4">
+                  <h3 className="text-sm font-semibold text-gray-300 mb-3">季度平均：整备质量 vs 续航</h3>
+                  <QuarterSummaryRangeChart data={sortedCars} />
+                </div>
+                <div className="bg-[#111115] border border-[#2a2a3e] rounded-lg p-4">
+                  <h3 className="text-sm font-semibold text-gray-300 mb-3">季度平均：整备质量 vs 电耗</h3>
+                  <QuarterSummaryConsumptionChart data={sortedCars} />
+                </div>
               </div>
             </div>
           </>
