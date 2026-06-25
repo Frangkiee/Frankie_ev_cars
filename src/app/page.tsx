@@ -146,8 +146,9 @@ export default function Home() {
           {/* Month Tabs */}
           <div className="flex gap-1 mt-3 overflow-x-auto pb-1">
             <button
+              type="button"
               onClick={() => setSelectedMonth(null)}
-              className={`px-3 py-1 rounded text-xs font-medium whitespace-nowrap transition-all ${
+              className={`px-3 py-1 rounded text-xs font-medium whitespace-nowrap transition-all cursor-pointer ${
                 selectedMonth === null
                   ? 'bg-[#00e5a0] text-[#0a0a0a]'
                   : 'bg-[#1a1a2e] text-gray-400 hover:text-white hover:bg-[#1a1a2e]/80'
@@ -158,8 +159,9 @@ export default function Home() {
             {availableMonths.map(m => (
               <button
                 key={m}
+                type="button"
                 onClick={() => setSelectedMonth(m)}
-                className={`px-3 py-1 rounded text-xs font-medium whitespace-nowrap transition-all ${
+                className={`px-3 py-1 rounded text-xs font-medium whitespace-nowrap transition-all cursor-pointer ${
                   selectedMonth === m
                     ? 'bg-[#00e5a0] text-[#0a0a0a]'
                     : 'bg-[#1a1a2e] text-gray-400 hover:text-white hover:bg-[#1a1a2e]/80'
