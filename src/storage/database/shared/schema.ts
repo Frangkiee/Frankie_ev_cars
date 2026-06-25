@@ -33,3 +33,32 @@ export const monthlyCars = pgTable(
     index("monthly_cars_group_name_idx").on(table.group_name),
   ]
 );
+
+// REEV/PHEV 增程/插混车型数据表
+export const monthlyHybridCars = pgTable(
+  "monthly_hybrid_cars",
+  {
+    id: serial().primaryKey(),
+    year: integer("year").notNull(),
+    month: integer("month").notNull(),
+    group_name: varchar("group_name", { length: 100 }).notNull(),
+    name: varchar("name", { length: 200 }).notNull(),
+    oem: varchar("oem", { length: 200 }).notNull(),
+    type: varchar("type", { length: 50 }).notNull(), // REEV or PHEV
+    electric_range: varchar("electric_range", { length: 100 }).notNull().default("-"), // 纯电续航
+    total_range: varchar("total_range", { length: 100 }).notNull().default("-"), // 综合续航
+    weight: varchar("weight", { length: 100 }).notNull().default("-"),
+    fuel_consumption: varchar("fuel_consumption", { length: 100 }).notNull().default("-"), // 馈电油耗
+    battery_type: varchar("battery_type", { length: 50 }).notNull().default("-"),
+    battery_capacity: varchar("battery_capacity", { length: 100 }).notNull().default("-"),
+    drive_mode: varchar("drive_mode", { length: 50 }).notNull().default("-"),
+    price: varchar("price", { length: 100 }).notNull().default("-"),
+    created_at: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+    updated_at: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("monthly_hybrid_cars_year_month_idx").on(table.year, table.month),
+    index("monthly_hybrid_cars_group_name_idx").on(table.group_name),
+    index("monthly_hybrid_cars_type_idx").on(table.type),
+  ]
+);

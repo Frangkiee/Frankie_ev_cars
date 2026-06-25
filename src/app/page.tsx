@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { WeightRangeChart, WeightConsumptionChart, CombinedQuarterChart } from '@/components/charts';
+import { HybridPage } from '@/components/HybridPage';
+
+type PageType = 'bev' | 'hybrid';
 
 interface CarRecord {
   id: number;
@@ -77,9 +80,104 @@ function MonthBadge({ month }: { month: number }) {
 }
 
 export default function Home() {
+  const [pageType, setPageType] = useState<PageType>('bev');
   const [cars, setCars] = useState<CarRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(null); // null = all months
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch('/api/cars?year=2026')
+      .then(res => res.json())
+      .then(data => {
+        setCars(data.data || []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  // Filter cars by selected month
+  const filteredCars = selectedMonth === null
+    ? cars
+    : cars.filter(c => c.month === selectedMonth);
+
+  // Sort by price
+  const sortedCars = [...filteredCars].sort((a, b) => parseMinPrice(a.price) - parseMinPrice(b.price));
+
+  // Calculate stats
+  const totalCars = sortedCars.length;
+  const prices = sortedCars.map(c => parseFirstNumber(c.price)).filter((v): v is number => v !== null);
+  const minPrice = prices.length ? Math.min(...prices) : 0;
+  const maxPrice = prices.length ? Math.max(...prices) : 0;
+  const ranges = sortedCars.map(c => {
+    const nums = c.aer.split('/').map(s => parseFirstNumber(s.trim())).filter((v): v is number => v !== null);
+    return nums.length ? Math.max(...nums) : null;
+  }).filter((v): v is number => v !== null);
+
+  // Cars per month
+  const carsPerMonth = [1, 2, 3, 4, 5, 6].map(m => {
+    return cars.filter(c => c.month === m).length;
+  });
+
+  // Available months (1-6)
+  const availableMonths = [1, 2, 3, 4, 5, 6];
+
+  // Render hybrid page
+  if (pageType === 'hybrid') {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] text-[#f0f0f0]">
+        {/* Top Navigation */}
+        <nav className="sticky top-0 z-50 bg-[#0a0a0a]/95 backdrop-blur border-b border-[#2a2a3e]">
+          <div className="max-w-[1400px] mx-auto px-4 py-3">
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPageType('bev')}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-[#1a1a2e] text-gray-400 hover:text-white hover:bg-[#1a1a2e]/80 transition-all cursor-pointer"
+              >
+                纯电动
+              </button>
+              <button
+                type="button"
+                onClick={() => setPageType('hybrid')}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-[#f59e0b] text-[#0a0a0a] transition-all cursor-pointer"
+              >
+                增程/插混
+              </button>
+            </div>
+          </div>
+        </nav>
+        <HybridPage />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] text-[#f0f0f0]">
+      {/* Top Navigation */}
+      <nav className="sticky top-0 z-50 bg-[#0a0a0a]/95 backdrop-blur border-b border-[#2a2a3e]">
+        <div className="max-w-[1400px] mx-auto px-4 py-3">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setPageType('bev')}
+              className="px-4 py-2 rounded-lg text-sm font-medium bg-[#00e5a0] text-[#0a0a0a] transition-all cursor-pointer"
+            >
+              纯电动
+            </button>
+            <button
+              type="button"
+              onClick={() => setPageType('hybrid')}
+              className="px-4 py-2 rounded-lg text-sm font-medium bg-[#1a1a2e] text-gray-400 hover:text-white hover:bg-[#1a1a2e]/80 transition-all cursor-pointer"
+            >
+              增程/插混
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Header */}
+      <header className="bg-[#0a0a0a] border-b border-[#2a2a3e]">
+        <div className="max-w-[1400px] mx-auto px-4 py-4"> // null = all months
 
   useEffect(() => {
     async function fetchData() {
