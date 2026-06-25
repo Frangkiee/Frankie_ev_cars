@@ -1,6 +1,6 @@
 'use client';
 
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 
 interface CarData {
   name: string;
@@ -38,6 +38,24 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<
   );
 }
 
+// Custom label component for scatter points
+function CarLabel({ x, y, name }: { x: number; y: number; name: string }) {
+  // Extract short name (first 2-3 characters)
+  const shortName = name.length > 4 ? name.slice(0, 4) : name;
+  return (
+    <text
+      x={x}
+      y={y - 10}
+      textAnchor="middle"
+      fill="#a0a0a0"
+      fontSize={10}
+      fontFamily="sans-serif"
+    >
+      {shortName}
+    </text>
+  );
+}
+
 export function WeightRangeChart({ data }: ChartProps) {
   const chartData = data
     .map(car => {
@@ -46,15 +64,15 @@ export function WeightRangeChart({ data }: ChartProps) {
       if (w === null || r === null) return null;
       return { ...car, x: w, y: r };
     })
-    .filter(Boolean) as Array<CarData & { x: number; y: number }>;
+    .filter(Boolean) as Array<CarData & { x: number; y: number; name: string }>;
 
   if (chartData.length === 0) {
     return <div className="text-gray-500 text-center py-12">暂无可绘制的数据</div>;
   }
 
   return (
-    <ResponsiveContainer width="100%" height={360}>
-      <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 10 }}>
+    <ResponsiveContainer width="100%" height={380}>
+      <ScatterChart margin={{ top: 20, right: 40, bottom: 20, left: 10 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3e" />
         <XAxis
           type="number"
@@ -64,6 +82,7 @@ export function WeightRangeChart({ data }: ChartProps) {
           tick={{ fill: '#a0a0a0', fontSize: 11 }}
           axisLine={{ stroke: '#333' }}
           tickLine={false}
+          domain={['dataMin - 100', 'dataMax + 100']}
           label={{ value: '整备质量 (kg)', position: 'bottom', fill: '#888', fontSize: 12, offset: 0 }}
         />
         <YAxis
@@ -74,10 +93,13 @@ export function WeightRangeChart({ data }: ChartProps) {
           tick={{ fill: '#a0a0a0', fontSize: 11 }}
           axisLine={{ stroke: '#333' }}
           tickLine={false}
+          domain={['dataMin - 50', 'dataMax + 50']}
           label={{ value: '续航 AER (km)', angle: -90, position: 'insideLeft', fill: '#888', fontSize: 12 }}
         />
         <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: '#00e5a0', opacity: 0.3 }} />
-        <Scatter data={chartData} fill="#00e5a0" fillOpacity={0.85} r={6} />
+        <Scatter data={chartData} fill="#00e5a0" fillOpacity={0.9} r={7}>
+          <LabelList dataKey="name" content={<CarLabel x={0} y={0} name="" />} />
+        </Scatter>
       </ScatterChart>
     </ResponsiveContainer>
   );
@@ -91,15 +113,15 @@ export function WeightConsumptionChart({ data }: ChartProps) {
       if (w === null || c === null) return null;
       return { ...car, x: w, y: c };
     })
-    .filter(Boolean) as Array<CarData & { x: number; y: number }>;
+    .filter(Boolean) as Array<CarData & { x: number; y: number; name: string }>;
 
   if (chartData.length === 0) {
     return <div className="text-gray-500 text-center py-12">暂无可绘制的数据</div>;
   }
 
   return (
-    <ResponsiveContainer width="100%" height={360}>
-      <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 10 }}>
+    <ResponsiveContainer width="100%" height={380}>
+      <ScatterChart margin={{ top: 20, right: 40, bottom: 20, left: 10 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3e" />
         <XAxis
           type="number"
@@ -109,6 +131,7 @@ export function WeightConsumptionChart({ data }: ChartProps) {
           tick={{ fill: '#a0a0a0', fontSize: 11 }}
           axisLine={{ stroke: '#333' }}
           tickLine={false}
+          domain={['dataMin - 100', 'dataMax + 100']}
           label={{ value: '整备质量 (kg)', position: 'bottom', fill: '#888', fontSize: 12, offset: 0 }}
         />
         <YAxis
@@ -123,7 +146,9 @@ export function WeightConsumptionChart({ data }: ChartProps) {
           label={{ value: '电耗 (kWh/100km)', angle: -90, position: 'insideLeft', fill: '#888', fontSize: 12 }}
         />
         <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: '#f59e0b', opacity: 0.3 }} />
-        <Scatter data={chartData} fill="#f59e0b" fillOpacity={0.85} r={6} />
+        <Scatter data={chartData} fill="#f59e0b" fillOpacity={0.9} r={7}>
+          <LabelList dataKey="name" content={<CarLabel x={0} y={0} name="" />} />
+        </Scatter>
       </ScatterChart>
     </ResponsiveContainer>
   );
