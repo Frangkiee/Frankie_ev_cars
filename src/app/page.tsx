@@ -1,255 +1,251 @@
 'use client';
 
-import { useState } from 'react';
-import { carsData, type CarInfo } from '@/data/cars';
+import { useMemo } from 'react';
+import { carsData } from '@/data/cars';
 
-const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
-
-function extractMaxRange(rangeStr: string): number {
-  const matches = rangeStr.match(/(\d+)/g);
-  if (!matches) return 0;
-  return Math.max(...matches.map(Number));
+function parseMinPrice(price: string): number {
+  const parts = price.split('-');
+  return parseFloat(parts[0]);
 }
 
-function CarCard({ car, index }: { car: CarInfo; index: number }) {
-  const maxRange = extractMaxRange(car.range);
-  const hasRange = car.range !== '待公布';
-
-  return (
-    <div
-      className="car-card relative rounded-2xl border border-white/[0.06] bg-[#16161a] p-5 sm:p-6 overflow-hidden"
-      style={{ animationDelay: `${index * 60}ms` }}
-    >
-      {/* Top row: brand tag + price */}
-      <div className="flex items-start justify-between mb-4">
-        <span className="inline-flex items-center rounded-md bg-white/[0.06] px-2.5 py-1 text-xs font-medium text-[#a0a0a0] tracking-wide">
-          {car.brand}
-        </span>
-        <span className="text-right">
-          <span className="text-lg sm:text-xl font-bold text-[#f59e0b]">
-            {car.price}
-          </span>
-        </span>
-      </div>
-
-      {/* Car name */}
-      <h3 className="text-xl sm:text-2xl font-bold text-white mb-1 leading-tight">
-        {car.name}
-      </h3>
-
-      {/* Type + Date */}
-      <div className="flex items-center gap-2 mb-4">
-        <span className="text-sm text-[#a0a0a0]">{car.type}</span>
-        <span className="text-[#333]">|</span>
-        <span className="text-sm text-[#00e5a0]">{car.date}</span>
-      </div>
-
-      {/* Range highlight */}
-      <div className="mb-4 rounded-xl bg-white/[0.03] border border-white/[0.04] p-4 flex items-center justify-between">
-        <div>
-          <div className="text-xs text-[#a0a0a0] mb-1 tracking-wider uppercase">
-            续航里程
-          </div>
-          {hasRange ? (
-            <div className="flex items-baseline gap-1">
-              <span className="text-3xl sm:text-4xl font-extrabold text-[#00e5a0] tabular-nums">
-                {maxRange}
-              </span>
-              <span className="text-sm text-[#00e5a0]/70 font-medium">km</span>
-            </div>
-          ) : (
-            <div className="text-lg text-[#666] font-medium">待公布</div>
-          )}
-        </div>
-        <div className="text-right">
-          <div className="text-xs text-[#a0a0a0] mb-1">完整续航</div>
-          <div className="text-sm text-white/80 font-medium">{car.range}</div>
-        </div>
-      </div>
-
-      {/* Details grid */}
-      <div className="space-y-2.5 mb-4">
-        <DetailRow label="电池" value={car.battery} />
-        <DetailRow label="电机" value={car.motor} />
-      </div>
-
-      {/* Highlights */}
-      <div className="border-t border-white/[0.06] pt-3">
-        <div className="text-xs text-[#a0a0a0] mb-2 tracking-wider">亮点配置</div>
-        <div className="flex flex-wrap gap-1.5">
-          {car.highlights.split('、').map((h, i) => (
-            <span
-              key={i}
-              className="inline-flex items-center rounded-md bg-[#00e5a0]/[0.08] border border-[#00e5a0]/[0.12] px-2 py-0.5 text-xs text-[#00e5a0] font-medium"
-            >
-              {h}
-            </span>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+function getMaxAER(aer: string): number {
+  const nums = aer.match(/(\d+)/g);
+  if (!nums) return 0;
+  return Math.max(...nums.map(Number));
 }
 
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-start gap-3">
-      <span className="text-xs text-[#666] min-w-[2.5rem] pt-0.5 tracking-wider">
-        {label}
+function BatteryTag({ type }: { type: string }) {
+  if (type === 'LFP') {
+    return (
+      <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+        LFP
       </span>
-      <span className="text-sm text-white/80">{value}</span>
-    </div>
+    );
+  }
+  if (type === 'NCM') {
+    return (
+      <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/20">
+        NCM
+      </span>
+    );
+  }
+  return <span className="text-xs text-gray-400">{type}</span>;
+}
+
+function DriveTag({ mode }: { mode: string }) {
+  const modes = mode.split('/');
+  return (
+    <span className="inline-flex items-center gap-1">
+      {modes.map((m, i) => {
+        const trimmed = m.trim();
+        let colorClass = '';
+        if (trimmed === 'FWD') {
+          colorClass = 'bg-sky-500/15 text-sky-400 border-sky-500/20';
+        } else if (trimmed === 'RWD') {
+          colorClass = 'bg-amber-500/15 text-amber-400 border-amber-500/20';
+        } else if (trimmed === 'AWD') {
+          colorClass = 'bg-rose-500/15 text-rose-400 border-rose-500/20';
+        }
+        return (
+          <span
+            key={i}
+            className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-semibold border ${colorClass}`}
+          >
+            {trimmed}
+          </span>
+        );
+      })}
+    </span>
   );
 }
 
 export default function Page() {
-  const [activeMonth, setActiveMonth] = useState(5); // 0-indexed, 5 = June
+  const sortedData = useMemo(() => {
+    return [...carsData].sort(
+      (a, b) => parseMinPrice(a.price) - parseMinPrice(b.price)
+    );
+  }, []);
 
-  const availableMonths = [5]; // Only June has data
+  const stats = useMemo(() => {
+    const total = sortedData.length;
+    const allPrices = sortedData.flatMap((c) =>
+      c.price.split('-').map(Number)
+    );
+    const minPrice = Math.min(...allPrices);
+    const maxPrice = Math.max(...allPrices);
+    const maxRange = Math.max(...sortedData.map((c) => getMaxAER(c.aer)));
+    return { total, minPrice, maxPrice, maxRange };
+  }, [sortedData]);
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#0a0a0a]/90 backdrop-blur-xl">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-4 sm:py-5">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                <span className="text-[#00e5a0]">2026</span>
-                纯电新车速递
-              </h1>
-              <p className="mt-1 text-xs sm:text-sm text-[#666]">
-                数据来源：懂车帝 newcar.dongchedi.com
-              </p>
-            </div>
-            <div className="hidden sm:flex items-center gap-2 text-xs text-[#666]">
-              <span className="inline-block w-2 h-2 rounded-full bg-[#00e5a0] animate-pulse" />
-              持续更新中
-            </div>
+      <header className="border-b border-white/[0.06]">
+        <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            <span className="text-[#00e5a0]">2026</span>年6月纯电新车
+          </h1>
+          <p className="mt-1.5 text-sm text-[#666]">
+            更新日期：2026-06-25 &nbsp;|&nbsp; 数据来源：懂车帝
+          </p>
+
+          {/* Stats */}
+          <div className="mt-5 flex flex-wrap items-center gap-4 sm:gap-6">
+            <StatPill
+              label="纯电新车"
+              value={`${stats.total} 款`}
+              accent
+            />
+            <StatPill
+              label="价格区间"
+              value={`${stats.minPrice} - ${stats.maxPrice} 万`}
+            />
+            <StatPill
+              label="最高续航"
+              value={`${stats.maxRange} km`}
+            />
           </div>
         </div>
       </header>
 
-      {/* Month tabs */}
-      <div className="sticky top-[72px] sm:top-[84px] z-40 border-b border-white/[0.06] bg-[#0a0a0a]/90 backdrop-blur-xl">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex gap-1 overflow-x-auto py-3 scrollbar-hide">
-            {months.map((month, idx) => {
-              const isActive = idx === activeMonth;
-              const hasData = availableMonths.includes(idx);
-              return (
-                <button
-                  key={month}
-                  onClick={() => setActiveMonth(idx)}
-                  className={`relative flex-shrink-0 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 ${
-                    isActive
-                      ? 'bg-[#00e5a0]/[0.12] text-[#00e5a0]'
-                      : 'text-[#666] hover:text-[#a0a0a0] hover:bg-white/[0.03]'
-                  }`}
-                >
-                  {month}
-                  {hasData && (
-                    <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-[#00e5a0]" />
-                  )}
-                </button>
-              );
-            })}
+      {/* Table */}
+      <main className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="rounded-xl border border-white/[0.06] overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm whitespace-nowrap">
+              <thead>
+                <tr className="bg-[#1a1a2e] text-white/90">
+                  <Th>汽车集团</Th>
+                  <Th>车型名称</Th>
+                  <Th>OEM厂商</Th>
+                  <Th>类型</Th>
+                  <Th align="right">续航AER(km)</Th>
+                  <Th align="right">车重(kg)</Th>
+                  <Th align="right">电耗(kWh/100km)</Th>
+                  <Th>电池类型</Th>
+                  <Th align="right">电池容量(kWh)</Th>
+                  <Th>驱动方式</Th>
+                  <Th align="right">价格(万元)</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedData.map((car, idx) => (
+                  <tr
+                    key={car.name}
+                    className={`border-t border-gray-200/10 transition-colors duration-150 hover:bg-[#00e5a0]/[0.06] ${
+                      idx % 2 === 0 ? 'bg-[#111115]' : 'bg-[#0d0d11]'
+                    }`}
+                  >
+                    <Td>{car.group}</Td>
+                    <Td className="font-semibold text-white">
+                      {car.name}
+                    </Td>
+                    <Td className="text-gray-400">{car.oem}</Td>
+                    <Td>
+                      <span className="inline-flex items-center rounded bg-white/[0.06] px-1.5 py-0.5 text-xs text-gray-300">
+                        {car.type}
+                      </span>
+                    </Td>
+                    <Td align="right" className="font-medium text-[#00e5a0] tabular-nums">
+                      {car.aer}
+                    </Td>
+                    <Td align="right" className="text-gray-400 tabular-nums">
+                      {car.weight}
+                    </Td>
+                    <Td align="right" className="text-gray-400 tabular-nums">
+                      {car.consumption}
+                    </Td>
+                    <Td>
+                      <BatteryTag type={car.batteryType} />
+                    </Td>
+                    <Td align="right" className="tabular-nums text-gray-300">
+                      {car.batteryCapacity}
+                    </Td>
+                    <Td>
+                      <DriveTag mode={car.driveMode} />
+                    </Td>
+                    <Td
+                      align="right"
+                      className="font-bold text-[#f59e0b] tabular-nums"
+                    >
+                      {car.price}
+                    </Td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-      </div>
 
-      {/* Main content */}
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        {activeMonth === 5 ? (
-          <>
-            {/* Stats bar */}
-            <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-[#a0a0a0]">
-                  {activeMonth + 1}月纯电新车
-                </span>
-                <span className="inline-flex items-center rounded-full bg-[#00e5a0]/[0.1] px-3 py-0.5 text-sm font-bold text-[#00e5a0]">
-                  {carsData.length} 款
-                </span>
-              </div>
-              <div className="flex items-center gap-4 text-xs text-[#666]">
-                <span>按上市日期排序</span>
-              </div>
-            </div>
-
-            {/* Car cards grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
-              {carsData.map((car, idx) => (
-                <CarCard key={car.name} car={car} index={idx} />
-              ))}
-            </div>
-
-            {/* Footer stats */}
-            <div className="mt-8 sm:mt-12 rounded-2xl border border-white/[0.06] bg-[#16161a] p-5 sm:p-6">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="text-center sm:text-left">
-                  <div className="text-sm text-[#a0a0a0] mb-1">本月统计</div>
-                  <div className="text-lg font-bold text-white">
-                    共 <span className="text-[#00e5a0]">{carsData.length}</span> 款纯电新车上市/即将上市
-                  </div>
-                </div>
-                <div className="flex items-center gap-6 text-sm">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-white">
-                      {carsData.filter((c) => c.range !== '待公布').length}
-                    </div>
-                    <div className="text-xs text-[#666]">已公布续航</div>
-                  </div>
-                  <div className="w-px h-8 bg-white/[0.06]" />
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-white">
-                      {new Set(carsData.map((c) => c.brand)).size}
-                    </div>
-                    <div className="text-xs text-[#666]">品牌/体系</div>
-                  </div>
-                  <div className="w-px h-8 bg-white/[0.06]" />
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-[#f59e0b]">
-                      6.28<span className="text-sm font-normal text-[#f59e0b]/70">万起</span>
-                    </div>
-                    <div className="text-xs text-[#666]">最低售价</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mb-4">
-              <svg
-                className="w-8 h-8 text-[#333]"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"
-                />
-              </svg>
-            </div>
-            <p className="text-[#666] text-sm">
-              {activeMonth + 1}月数据暂未收录，敬请期待
-            </p>
-          </div>
-        )}
+        {/* Footer */}
+        <footer className="mt-6 text-center text-xs text-[#444]">
+          <p>数据来源：懂车帝 newcar.dongchedi.com &nbsp;|&nbsp; 仅供参考，以官方信息为准</p>
+          <p className="mt-1">最后更新：2026-06-25</p>
+        </footer>
       </main>
-
-      {/* Footer */}
-      <footer className="border-t border-white/[0.06] py-6">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-xs text-[#444]">
-            数据来源：懂车帝 newcar.dongchedi.com | 仅供参考，以官方信息为准
-          </p>
-        </div>
-      </footer>
     </div>
+  );
+}
+
+/* ---- small helper components ---- */
+
+function StatPill({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className="flex items-baseline gap-2">
+      <span className="text-xs text-[#666]">{label}</span>
+      <span
+        className={`text-lg font-bold tabular-nums ${
+          accent ? 'text-[#00e5a0]' : 'text-white'
+        }`}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function Th({
+  children,
+  align,
+}: {
+  children: React.ReactNode;
+  align?: 'left' | 'right' | 'center';
+}) {
+  return (
+    <th
+      className={`px-3 py-3 text-xs font-semibold uppercase tracking-wider text-gray-400 ${
+        align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'
+      }`}
+    >
+      {children}
+    </th>
+  );
+}
+
+function Td({
+  children,
+  align,
+  className,
+}: {
+  children: React.ReactNode;
+  align?: 'left' | 'right' | 'center';
+  className?: string;
+}) {
+  return (
+    <td
+      className={`px-3 py-2.5 text-gray-300 ${
+        align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'
+      } ${className ?? ''}`}
+    >
+      {children}
+    </td>
   );
 }
