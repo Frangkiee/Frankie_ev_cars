@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { WeightRangeChart, WeightConsumptionChart, CombinedQuarterChart } from '@/components/charts';
+import { PriceScatterPlot } from '@/components/PriceScatterPlot';
 
 interface CarRecord {
   id: number;
@@ -76,10 +77,28 @@ function MonthBadge({ month }: { month: number }) {
   );
 }
 
+function HighlightText({ text, query }: { text: string; query: string }) {
+  if (!query.trim()) return <>{text}</>;
+  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  const parts = text.split(regex);
+  return (
+    <>
+      {parts.map((part, i) =>
+        regex.test(part) ? (
+          <mark key={i} className="bg-amber-400/30 text-amber-300 rounded px-0.5">{part}</mark>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  );
+}
+
 export default function Home() {
   const [cars, setCars] = useState<CarRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null); // null = all months
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     async function fetchData() {
@@ -97,10 +116,19 @@ export default function Home() {
     fetchData();
   }, []);
 
-  // Filter cars by selected month
-  const filteredCars = selectedMonth === null
-    ? cars
-    : cars.filter(c => c.month === selectedMonth);
+  // Filter cars by selected month and search query
+  const filteredCars = useMemo(() => {
+    let result = selectedMonth === null ? cars : cars.filter(c => c.month === selectedMonth);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(c =>
+        c.name.toLowerCase().includes(q) ||
+        c.group_name.toLowerCase().includes(q) ||
+        c.oem.toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [cars, selectedMonth, searchQuery]);
 
   // Sort by price
   const sortedCars = [...filteredCars].sort((a, b) => parseMinPrice(a.price) - parseMinPrice(b.price));
@@ -217,6 +245,67 @@ export default function Home() {
           </div>
         )}
 
+        {/* Price vs Range and Price vs Consumption Charts */}
+        {!loading && sortedCars.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+            <PriceScatterPlot
+              data={sortedCars.map(c => ({
+                name: c.name,
+                price: parseMinPrice(c.price),
+                yValue: parseFirstNumber(c.aer) || 0,
+                month: c.month,
+                group_name: c.group_name,
+              })).filter(d => d.yValue > 0)}
+              xLabel="价格 (万元)"
+              yLabel="续航 (km)"
+              title="价格 vs 续航"
+              yUnit="km"
+            />
+            <PriceScatterPlot
+              data={sortedCars.map(c => ({
+                name: c.name,
+                price: parseMinPrice(c.price),
+                yValue: parseFirstNumber(c.consumption) || 0,
+                month: c.month,
+                group_name: c.group_name,
+              })).filter(d => d.yValue > 0)}
+              xLabel="价格 (万元)"
+              yLabel="电耗 (kWh/100km)"
+              title="价格 vs 电耗"
+              yUnit="kWh"
+            />
+          </div>
+        )}
+
+        {/* Search Box */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="搜索车型、品牌、OEM..."
+              className="w-full bg-[#111115] border border-[#2a2a3e] rounded-lg px-4 py-2.5 pl-10 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#00e5a0]/50 transition-colors"
+            />
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          {searchQuery && (
+            <div className="text-sm text-gray-400 whitespace-nowrap">
+              找到 <span className="text-[#00e5a0] font-bold">{sortedCars.length}</span> 款
+            </div>
+          )}
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="px-3 py-2 text-xs text-gray-400 hover:text-white bg-[#1a1a2e] rounded-lg transition-colors"
+            >
+              清除
+            </button>
+          )}
+        </div>
+
         {loading ? (
           <div className="text-center py-20 text-gray-500">加载中...</div>
         ) : sortedCars.length === 0 ? (
@@ -259,9 +348,9 @@ export default function Home() {
                         {selectedMonth === null && (
                           <td className="px-2 py-2 text-center"><MonthBadge month={car.month} /></td>
                         )}
-                        <td className="px-3 py-2 text-gray-400 whitespace-nowrap">{car.group_name}</td>
-                        <td className="px-3 py-2 font-semibold text-white whitespace-nowrap">{car.name}</td>
-                        <td className="px-3 py-2 text-gray-400 whitespace-nowrap">{car.oem}</td>
+                        <td className="px-3 py-2 text-gray-400 whitespace-nowrap"><HighlightText text={car.group_name} query={searchQuery} /></td>
+                        <td className="px-3 py-2 font-semibold text-white whitespace-nowrap"><HighlightText text={car.name} query={searchQuery} /></td>
+                        <td className="px-3 py-2 text-gray-400 whitespace-nowrap"><HighlightText text={car.oem} query={searchQuery} /></td>
                         <td className="px-3 py-2 text-gray-400 whitespace-nowrap">{car.type}</td>
                         <td className="px-3 py-2 text-right font-mono text-[#00e5a0] whitespace-nowrap tabular-nums">{car.aer}</td>
                         <td className="px-3 py-2 text-right font-mono text-gray-300 whitespace-nowrap tabular-nums">{car.weight}</td>
