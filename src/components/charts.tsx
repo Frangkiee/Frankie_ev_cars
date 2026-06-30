@@ -163,9 +163,139 @@ export function WeightRangeChart({ data }: ChartProps) {
                 fill={QUARTER_COLORS[quarter as keyof typeof QUARTER_COLORS]}
                 fillOpacity={0.9}
                 r={7}
-              >
-                <LabelList dataKey="name" content={<CarLabel x={0} y={0} name="" />} />
-              </Scatter>
+              />
+            )
+          ))}
+        </ScatterChart>
+      </ResponsiveContainer>
+      <QuarterLegend />
+    </div>
+  );
+}
+
+// 价格 vs 续航 散点图
+export function PriceRangeChart({ data }: ChartProps) {
+  const quarterData: Record<string, Array<CarData & { x: number; y: number; name: string }>> = {
+    Q1: [], Q2: [], Q3: [], Q4: []
+  };
+
+  data.forEach(car => {
+    const p = parseFirstNumber(car.price);
+    const r = parseFirstNumber(car.aer);
+    if (p === null || r === null) return;
+    const quarter = getQuarter(car.month);
+    quarterData[quarter].push({ ...car, x: p, y: r });
+  });
+
+  const hasData = Object.values(quarterData).some(arr => arr.length > 0);
+  if (!hasData) {
+    return <div className="text-gray-500 text-center py-12">暂无可绘制的数据</div>;
+  }
+
+  return (
+    <div>
+      <ResponsiveContainer width="100%" height={380}>
+        <ScatterChart margin={{ top: 20, right: 40, bottom: 20, left: 10 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3e" />
+          <XAxis
+            type="number"
+            dataKey="x"
+            name="价格"
+            unit=" 万"
+            tick={{ fill: '#a0a0a0', fontSize: 11 }}
+            axisLine={{ stroke: '#333' }}
+            tickLine={false}
+            domain={['dataMin - 2', 'dataMax + 2']}
+            label={{ value: '价格 (万元)', position: 'bottom', fill: '#888', fontSize: 12, offset: 0 }}
+          />
+          <YAxis
+            type="number"
+            dataKey="y"
+            name="续航"
+            unit=" km"
+            tick={{ fill: '#a0a0a0', fontSize: 11 }}
+            axisLine={{ stroke: '#333' }}
+            tickLine={false}
+            domain={['dataMin - 50', 'dataMax + 50']}
+            label={{ value: '续航 AER (km)', angle: -90, position: 'insideLeft', fill: '#888', fontSize: 12 }}
+          />
+          <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: '#8b5cf6', opacity: 0.3 }} />
+          {Object.entries(quarterData).map(([quarter, qData]) => (
+            qData.length > 0 && (
+              <Scatter
+                key={quarter}
+                name={QUARTER_NAMES[quarter as keyof typeof QUARTER_NAMES]}
+                data={qData}
+                fill={QUARTER_COLORS[quarter as keyof typeof QUARTER_COLORS]}
+                fillOpacity={0.9}
+                r={7}
+              />
+            )
+          ))}
+        </ScatterChart>
+      </ResponsiveContainer>
+      <QuarterLegend />
+    </div>
+  );
+}
+
+// 价格 vs 电耗 散点图
+export function PriceConsumptionChart({ data }: ChartProps) {
+  const quarterData: Record<string, Array<CarData & { x: number; y: number; name: string }>> = {
+    Q1: [], Q2: [], Q3: [], Q4: []
+  };
+
+  data.forEach(car => {
+    const p = parseFirstNumber(car.price);
+    const c = parseFirstNumber(car.consumption);
+    if (p === null || c === null) return;
+    const quarter = getQuarter(car.month);
+    quarterData[quarter].push({ ...car, x: p, y: c });
+  });
+
+  const hasData = Object.values(quarterData).some(arr => arr.length > 0);
+  if (!hasData) {
+    return <div className="text-gray-500 text-center py-12">暂无可绘制的数据</div>;
+  }
+
+  return (
+    <div>
+      <ResponsiveContainer width="100%" height={380}>
+        <ScatterChart margin={{ top: 20, right: 40, bottom: 20, left: 10 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3e" />
+          <XAxis
+            type="number"
+            dataKey="x"
+            name="价格"
+            unit=" 万"
+            tick={{ fill: '#a0a0a0', fontSize: 11 }}
+            axisLine={{ stroke: '#333' }}
+            tickLine={false}
+            domain={['dataMin - 2', 'dataMax + 2']}
+            label={{ value: '价格 (万元)', position: 'bottom', fill: '#888', fontSize: 12, offset: 0 }}
+          />
+          <YAxis
+            type="number"
+            dataKey="y"
+            name="电耗"
+            unit=" kWh/100km"
+            tick={{ fill: '#a0a0a0', fontSize: 11 }}
+            axisLine={{ stroke: '#333' }}
+            tickLine={false}
+            domain={['dataMin - 1', 'dataMax + 1']}
+            label={{ value: '电耗 (kWh/100km)', angle: -90, position: 'insideLeft', fill: '#888', fontSize: 12 }}
+          />
+          <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: '#f43f5e', opacity: 0.3 }} />
+          {Object.entries(quarterData).map(([quarter, qData]) => (
+            qData.length > 0 && (
+              <Scatter
+                key={quarter}
+                name={QUARTER_NAMES[quarter as keyof typeof QUARTER_NAMES]}
+                data={qData}
+                fill={QUARTER_COLORS[quarter as keyof typeof QUARTER_COLORS]}
+                fillOpacity={0.9}
+                r={7}
+              />
             )
           ))}
         </ScatterChart>
@@ -397,9 +527,7 @@ export function WeightConsumptionChart({ data }: ChartProps) {
                 fill={QUARTER_COLORS[quarter as keyof typeof QUARTER_COLORS]}
                 fillOpacity={0.9}
                 r={7}
-              >
-                <LabelList dataKey="name" content={<CarLabel x={0} y={0} name="" />} />
-              </Scatter>
+              />
             )
           ))}
         </ScatterChart>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { WeightRangeChart, WeightConsumptionChart, CombinedQuarterChart } from '@/components/charts';
+import { WeightRangeChart, WeightConsumptionChart, CombinedQuarterChart, PriceRangeChart, PriceConsumptionChart } from '@/components/charts';
 
 interface CarRecord {
   id: number;
@@ -296,6 +296,18 @@ export default function Home() {
                 全年数据总览
               </h3>
               <CombinedQuarterChart data={sortedCars} />
+            </div>
+
+            {/* Price Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <div className="bg-[#111115] border border-[#2a2a3e] rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-gray-300 mb-3">价格 vs 续航</h3>
+                <PriceRangeChart data={sortedCars} />
+              </div>
+              <div className="bg-[#111115] border border-[#2a2a3e] rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-gray-300 mb-3">价格 vs 电耗</h3>
+                <PriceConsumptionChart data={sortedCars} />
+              </div>
             </div>
           </>
         )}
