@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList, Legend } from 'recharts';
 
 interface CarData {
@@ -14,6 +15,7 @@ interface CarData {
 
 interface ChartProps {
   data: CarData[];
+  highlightNames?: Set<string>;
 }
 
 // Quarter colors
@@ -173,8 +175,152 @@ export function WeightRangeChart({ data }: ChartProps) {
   );
 }
 
+// 检测连续月份出现的相同车型
+export function findRecurringCars(data: CarData[]): Map<string, CarData[]> {
+  const nameMap = new Map<string, CarData[]>();
+  
+  data.forEach(car => {
+    const name = car.name;
+    if (!nameMap.has(name)) {
+      nameMap.set(name, []);
+    }
+    nameMap.get(name)!.push(car);
+  });
+  
+  // 过滤出在连续月份出现的车型
+  const recurring = new Map<string, CarData[]>();
+  nameMap.forEach((cars, name) => {
+    if (cars.length > 1) {
+      // 检查是否有连续月份
+      const months = cars.map(c => c.month || 0).sort((a, b) => a - b);
+      let hasConsecutive = false;
+      for (let i = 0; i < months.length - 1; i++) {
+        if (months[i + 1] - months[i] === 1) {
+          hasConsecutive = true;
+          break;
+        }
+      }
+      if (hasConsecutive) {
+        recurring.set(name, cars);
+      }
+    }
+  });
+  
+  return recurring;
+}
+
+// 获取连续月份车型的名称列表
+export function getRecurringCarNames(data: CarData[]): Set<string> {
+  const recurring = findRecurringCars(data);
+  return new Set(recurring.keys());
+}
+
+// 带搜索功能的图表容器
+export function ChartsWithSearch({ data }: ChartProps) {
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // 检测连续月份车型
+  const recurringCars = findRecurringCars(data);
+  const recurringNames = getRecurringCarNames(data);
+  
+  // 过滤数据
+  const filteredData = searchTerm
+    ? data.filter(car => 
+        car.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        car.group_name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : data;
+
+  return (
+    <>
+      {/* 搜索框 */}
+      <div className="mb-6">
+        <div className="relative max-w-md">
+          <input
+            type="text"
+            placeholder="搜索车型或品牌..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-[#1a1a2e] border border-[#2a2a3e] rounded-lg px-4 py-2 pl-10 text-white placeholder-gray-500 focus:outline-none focus:border-[#00e5a0]/50 transition-colors"
+          />
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+        {searchTerm && (
+          <p className="text-gray-500 text-sm mt-2">
+            找到 {filteredData.length} 款车型
+          </p>
+        )}
+      </div>
+
+      {/* 连续月份车型提示 */}
+      {recurringCars.size > 0 && !searchTerm && (
+        <div className="mb-6 bg-gradient-to-r from-[#1a1a2e]/50 to-[#0a0a0a] border border-[#f59e0b]/30 rounded-lg p-4">
+          <h4 className="text-[#f59e0b] font-semibold text-sm mb-3 flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            连续月份上市/改款车型 ({recurringCars.size}款)
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+            {Array.from(recurringCars.entries()).map(([name, cars]) => {
+              const months = cars.map(c => c.month).sort((a, b) => (a || 0) - (b || 0));
+              return (
+                <div key={name} className="flex items-center gap-2 text-sm">
+                  <span className="text-white font-medium">{name}</span>
+                  <span className="text-gray-500">
+                    {months.map(m => `${m}月`).join(' → ')}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* 图表区域 */}
+      <div className="space-y-8">
+        {/* 车重 vs 续航 */}
+        <div className="bg-[#111115] border border-[#2a2a3e] rounded-lg p-4">
+          <h3 className="text-sm font-semibold text-gray-300 mb-3">整备质量 vs 续航里程</h3>
+          <WeightRangeChart data={filteredData} highlightNames={recurringNames} />
+        </div>
+
+        {/* 车重 vs 电耗 */}
+        <div className="bg-[#111115] border border-[#2a2a3e] rounded-lg p-4">
+          <h3 className="text-sm font-semibold text-gray-300 mb-3">整备质量 vs 电耗</h3>
+          <WeightConsumptionChart data={filteredData} highlightNames={recurringNames} />
+        </div>
+
+        {/* 价格 vs 续航 */}
+        <div className="bg-[#111115] border border-[#2a2a3e] rounded-lg p-4">
+          <h3 className="text-sm font-semibold text-gray-300 mb-3">价格 vs 续航里程</h3>
+          <PriceRangeChart data={filteredData} highlightNames={recurringNames} />
+        </div>
+
+        {/* 价格 vs 电耗 */}
+        <div className="bg-[#111115] border border-[#2a2a3e] rounded-lg p-4">
+          <h3 className="text-sm font-semibold text-gray-300 mb-3">价格 vs 电耗</h3>
+          <PriceConsumptionChart data={filteredData} highlightNames={recurringNames} />
+        </div>
+      </div>
+    </>
+  );
+}
+
 // 价格 vs 续航 散点图
-export function PriceRangeChart({ data }: ChartProps) {
+export function PriceRangeChart({ data, highlightNames }: ChartProps) {
   const quarterData: Record<string, Array<CarData & { x: number; y: number; name: string }>> = {
     Q1: [], Q2: [], Q3: [], Q4: []
   };
@@ -195,7 +341,7 @@ export function PriceRangeChart({ data }: ChartProps) {
   return (
     <div>
       <ResponsiveContainer width="100%" height={380}>
-        <ScatterChart margin={{ top: 20, right: 40, bottom: 20, left: 10 }}>
+        <ScatterChart margin={{ top: 20, right: 60, bottom: 20, left: 10 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3e" />
           <XAxis
             type="number"
@@ -229,7 +375,34 @@ export function PriceRangeChart({ data }: ChartProps) {
                 fill={QUARTER_COLORS[quarter as keyof typeof QUARTER_COLORS]}
                 fillOpacity={0.9}
                 r={7}
-              />
+              >
+                {highlightNames && highlightNames.size > 0 && (
+                  <LabelList
+                    dataKey="name"
+                    position="right"
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    content={(props: any) => {
+                      const { x, y, index, payload } = props;
+                      if (!payload || !highlightNames.has(payload.name)) return null;
+                      const point = qData[index];
+                      if (!point) return null;
+                      return (
+                        <text
+                          x={x}
+                          y={y}
+                          dx={12}
+                          dy={4}
+                          fill="#f59e0b"
+                          fontSize={10}
+                          fontWeight="bold"
+                        >
+                          {point.name}
+                        </text>
+                      );
+                    }}
+                  />
+                )}
+              </Scatter>
             )
           ))}
         </ScatterChart>
@@ -240,7 +413,7 @@ export function PriceRangeChart({ data }: ChartProps) {
 }
 
 // 价格 vs 电耗 散点图
-export function PriceConsumptionChart({ data }: ChartProps) {
+export function PriceConsumptionChart({ data, highlightNames }: ChartProps) {
   const quarterData: Record<string, Array<CarData & { x: number; y: number; name: string }>> = {
     Q1: [], Q2: [], Q3: [], Q4: []
   };
@@ -261,7 +434,7 @@ export function PriceConsumptionChart({ data }: ChartProps) {
   return (
     <div>
       <ResponsiveContainer width="100%" height={380}>
-        <ScatterChart margin={{ top: 20, right: 40, bottom: 20, left: 10 }}>
+        <ScatterChart margin={{ top: 20, right: 60, bottom: 20, left: 10 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3e" />
           <XAxis
             type="number"
@@ -295,7 +468,34 @@ export function PriceConsumptionChart({ data }: ChartProps) {
                 fill={QUARTER_COLORS[quarter as keyof typeof QUARTER_COLORS]}
                 fillOpacity={0.9}
                 r={7}
-              />
+              >
+                {highlightNames && highlightNames.size > 0 && (
+                  <LabelList
+                    dataKey="name"
+                    position="right"
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    content={(props: any) => {
+                      const { x, y, index, payload } = props;
+                      if (!payload || !highlightNames.has(payload.name)) return null;
+                      const point = qData[index];
+                      if (!point) return null;
+                      return (
+                        <text
+                          x={x}
+                          y={y}
+                          dx={12}
+                          dy={4}
+                          fill="#f59e0b"
+                          fontSize={10}
+                          fontWeight="bold"
+                        >
+                          {point.name}
+                        </text>
+                      );
+                    }}
+                  />
+                )}
+              </Scatter>
             )
           ))}
         </ScatterChart>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { WeightRangeChart, WeightConsumptionChart, CombinedQuarterChart, PriceRangeChart, PriceConsumptionChart } from '@/components/charts';
+import { WeightRangeChart, WeightConsumptionChart, CombinedQuarterChart, PriceRangeChart, PriceConsumptionChart, ChartsWithSearch } from '@/components/charts';
 
 interface CarRecord {
   id: number;
@@ -289,25 +289,13 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Combined Chart */}
+            {/* Charts with Search */}
             <div className="bg-[#111115] border border-[#2a2a3e] rounded-lg p-6 mb-8">
               <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-gradient-to-r from-[#00e5a0] via-[#3b82f6] to-[#ec4899]"></span>
-                全年数据总览
+                数据可视化
               </h3>
-              <CombinedQuarterChart data={sortedCars} />
-            </div>
-
-            {/* Price Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              <div className="bg-[#111115] border border-[#2a2a3e] rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-gray-300 mb-3">价格 vs 续航</h3>
-                <PriceRangeChart data={sortedCars} />
-              </div>
-              <div className="bg-[#111115] border border-[#2a2a3e] rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-gray-300 mb-3">价格 vs 电耗</h3>
-                <PriceConsumptionChart data={sortedCars} />
-              </div>
+              <ChartsWithSearch data={sortedCars} />
             </div>
           </>
         )}
