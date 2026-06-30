@@ -11,6 +11,9 @@ interface CarData {
   consumption: string;
   price: string;
   month?: number;
+  battery_type?: string;
+  battery_capacity?: string;
+  drive_mode?: string;
 }
 
 interface ChartProps {
@@ -266,22 +269,105 @@ export function ChartsWithSearch({ data }: ChartProps) {
 
       {/* 连续月份车型提示 */}
       {recurringCars.size > 0 && !searchTerm && (
-        <div className="mb-6 bg-gradient-to-r from-[#1a1a2e]/50 to-[#0a0a0a] border border-[#f59e0b]/30 rounded-lg p-4">
-          <h4 className="text-[#f59e0b] font-semibold text-sm mb-3 flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="mb-6 bg-gradient-to-r from-[#1a1a2e]/50 to-[#0a0a0a] border border-[#f59e0b]/30 rounded-lg p-5">
+          <h4 className="text-[#f59e0b] font-semibold text-base mb-4 flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             连续月份上市/改款车型 ({recurringCars.size}款)
           </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+          <div className="space-y-4">
             {Array.from(recurringCars.entries()).map(([name, cars]) => {
-              const months = cars.map(c => c.month).sort((a, b) => (a || 0) - (b || 0));
+              const sortedCars = [...cars].sort((a, b) => (a.month || 0) - (b.month || 0));
               return (
-                <div key={name} className="flex items-center gap-2 text-sm">
-                  <span className="text-white font-medium">{name}</span>
-                  <span className="text-gray-500">
-                    {months.map(m => `${m}月`).join(' → ')}
-                  </span>
+                <div key={name} className="bg-[#0a0a0a]/60 border border-[#2a2a3e] rounded-lg p-4">
+                  <h5 className="text-white font-semibold text-sm mb-3 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[#f59e0b]"></span>
+                    {name}
+                    <span className="text-gray-500 text-xs font-normal">
+                      ({sortedCars.map(c => `${c.month}月`).join(' → ')})
+                    </span>
+                  </h5>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="text-gray-500 border-b border-[#2a2a3e]">
+                          <th className="text-left py-2 px-2">月份</th>
+                          <th className="text-right py-2 px-2">价格(万)</th>
+                          <th className="text-right py-2 px-2">续航(km)</th>
+                          <th className="text-right py-2 px-2">电耗(kWh)</th>
+                          <th className="text-right py-2 px-2">电池(kWh)</th>
+                          <th className="text-left py-2 px-2">电池类型</th>
+                          <th className="text-left py-2 px-2">驱动</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sortedCars.map((car, idx) => {
+                          const prevCar = idx > 0 ? sortedCars[idx - 1] : null;
+                          return (
+                            <tr key={idx} className="border-b border-[#2a2a3e]/50 last:border-0">
+                              <td className="py-2 px-2 text-white font-medium">{car.month}月</td>
+                              <td className="py-2 px-2 text-right">
+                                <span className={prevCar && car.price !== prevCar.price ? 'text-[#f59e0b] font-semibold' : 'text-gray-300'}>
+                                  {car.price || '-'}
+                                </span>
+                              </td>
+                              <td className="py-2 px-2 text-right">
+                                <span className={prevCar && car.aer !== prevCar.aer ? 'text-[#00e5a0] font-semibold' : 'text-gray-300'}>
+                                  {car.aer || '-'}
+                                </span>
+                              </td>
+                              <td className="py-2 px-2 text-right">
+                                <span className={prevCar && car.consumption !== prevCar.consumption ? 'text-[#3b82f6] font-semibold' : 'text-gray-300'}>
+                                  {car.consumption || '-'}
+                                </span>
+                              </td>
+                              <td className="py-2 px-2 text-right">
+                                <span className={prevCar && car.battery_capacity !== prevCar.battery_capacity ? 'text-[#ec4899] font-semibold' : 'text-gray-300'}>
+                                  {car.battery_capacity || '-'}
+                                </span>
+                              </td>
+                              <td className="py-2 px-2">
+                                <span className={prevCar && car.battery_type !== prevCar.battery_type ? 'text-[#a855f7] font-semibold' : 'text-gray-400'}>
+                                  {car.battery_type || '-'}
+                                </span>
+                              </td>
+                              <td className="py-2 px-2">
+                                <span className={prevCar && car.drive_mode !== prevCar.drive_mode ? 'text-[#14b8a6] font-semibold' : 'text-gray-400'}>
+                                  {car.drive_mode || '-'}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  {/* 变化说明 */}
+                  {sortedCars.length > 1 && (() => {
+                    const changes: string[] = [];
+                    for (let i = 1; i < sortedCars.length; i++) {
+                      const prev = sortedCars[i - 1];
+                      const curr = sortedCars[i];
+                      if (prev.price !== curr.price && curr.price) changes.push(`价格: ${prev.price || '?'} → ${curr.price}`);
+                      if (prev.aer !== curr.aer && curr.aer) changes.push(`续航: ${prev.aer || '?'} → ${curr.aer}km`);
+                      if (prev.consumption !== curr.consumption && curr.consumption) changes.push(`电耗: ${prev.consumption || '?'} → ${curr.consumption}`);
+                      if (prev.battery_capacity !== curr.battery_capacity && curr.battery_capacity) changes.push(`电池: ${prev.battery_capacity || '?'} → ${curr.battery_capacity}kWh`);
+                    }
+                    if (changes.length === 0) return null;
+                    return (
+                      <div className="mt-3 pt-3 border-t border-[#2a2a3e]/50">
+                        <p className="text-xs text-gray-500 mb-1">变化项：</p>
+                        <div className="flex flex-wrap gap-2">
+                          {changes.map((change, idx) => (
+                            <span key={idx} className="text-xs bg-[#f59e0b]/10 text-[#f59e0b] px-2 py-1 rounded">
+                              {change}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })}
