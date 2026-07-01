@@ -6,6 +6,7 @@ import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Responsive
 interface CarData {
   name: string;
   group_name: string;
+  oem?: string;
   weight: string;
   aer: string;
   consumption: string;
@@ -35,6 +36,36 @@ const QUARTER_NAMES = {
   Q3: 'Q3 (7-9月)',
   Q4: 'Q4 (10-12月)',
 };
+
+const MONTH_COLORS: Record<number, string> = {
+  1: 'bg-[#00e5a0]/20 text-[#00e5a0]',
+  2: 'bg-[#00e5a0]/20 text-[#00e5a0]',
+  3: 'bg-[#00e5a0]/20 text-[#00e5a0]',
+  4: 'bg-[#3b82f6]/20 text-[#3b82f6]',
+  5: 'bg-[#3b82f6]/20 text-[#3b82f6]',
+  6: 'bg-[#3b82f6]/20 text-[#3b82f6]',
+  7: 'bg-[#f59e0b]/20 text-[#f59e0b]',
+  8: 'bg-[#f59e0b]/20 text-[#f59e0b]',
+  9: 'bg-[#f59e0b]/20 text-[#f59e0b]',
+  10: 'bg-[#ec4899]/20 text-[#ec4899]',
+  11: 'bg-[#ec4899]/20 text-[#ec4899]',
+  12: 'bg-[#ec4899]/20 text-[#ec4899]',
+};
+
+function getBatteryTypeColor(type: string | undefined): string {
+  if (!type) return 'bg-gray-700/50 text-gray-400';
+  if (type.includes('LFP')) return 'bg-[#00e5a0]/20 text-[#00e5a0]';
+  if (type.includes('NCM')) return 'bg-[#3b82f6]/20 text-[#3b82f6]';
+  return 'bg-gray-700/50 text-gray-400';
+}
+
+function getDriveModeColor(mode: string | undefined): string {
+  if (!mode) return 'bg-gray-700/50 text-gray-400';
+  if (mode.includes('AWD')) return 'bg-[#ec4899]/20 text-[#ec4899]';
+  if (mode.includes('RWD')) return 'bg-[#f97316]/20 text-[#f97316]';
+  if (mode.includes('FWD')) return 'bg-[#3b82f6]/20 text-[#3b82f6]';
+  return 'bg-gray-700/50 text-gray-400';
+}
 
 function getQuarter(month?: number): keyof typeof QUARTER_COLORS {
   if (!month) return 'Q2'; // Default to Q2 for backward compatibility
@@ -401,6 +432,68 @@ export function ChartsWithSearch({ data }: ChartProps) {
           <PriceConsumptionChart data={filteredData} highlightNames={recurringNames} />
         </div>
       </div>
+
+      {/* 搜索结果参数列表 */}
+      {searchTerm && filteredData.length > 0 && (
+        <div className="mt-8 bg-gradient-to-r from-[#1a1a2e]/50 to-[#0a0a0a] border border-[#00e5a0]/30 rounded-lg p-5">
+          <h4 className="text-[#00e5a0] font-semibold text-base mb-4 flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            搜索结果：{filteredData.length} 款车型参数详情
+          </h4>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-gray-400 border-b border-[#2a2a3e] text-xs">
+                  <th className="text-left py-2 px-2">月份</th>
+                  <th className="text-left py-2 px-2">集团</th>
+                  <th className="text-left py-2 px-2">车型</th>
+                  <th className="text-left py-2 px-2">OEM</th>
+                  <th className="text-right py-2 px-2">价格(万)</th>
+                  <th className="text-right py-2 px-2">续航(km)</th>
+                  <th className="text-right py-2 px-2">车重(kg)</th>
+                  <th className="text-right py-2 px-2">电耗(kWh)</th>
+                  <th className="text-left py-2 px-2">电池类型</th>
+                  <th className="text-right py-2 px-2">电池(kWh)</th>
+                  <th className="text-left py-2 px-2">驱动</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredData
+                  .sort((a, b) => (a.month || 0) - (b.month || 0))
+                  .map((car, idx) => (
+                  <tr key={idx} className="border-b border-[#2a2a3e]/50 last:border-0 hover:bg-[#00e5a0]/5">
+                    <td className="py-2 px-2">
+                      <span className={`text-xs px-1.5 py-0.5 rounded ${MONTH_COLORS[(car.month || 1) as keyof typeof MONTH_COLORS]}`}>
+                        {car.month}月
+                      </span>
+                    </td>
+                    <td className="py-2 px-2 text-gray-300 text-xs">{car.group_name}</td>
+                    <td className="py-2 px-2 text-white font-medium text-xs">{car.name}</td>
+                    <td className="py-2 px-2 text-gray-400 text-xs">{car.oem}</td>
+                    <td className="py-2 px-2 text-right text-[#f59e0b] font-semibold text-xs">{car.price || '-'}</td>
+                    <td className="py-2 px-2 text-right text-[#00e5a0] text-xs">{car.aer || '-'}</td>
+                    <td className="py-2 px-2 text-right text-gray-300 text-xs">{car.weight || '-'}</td>
+                    <td className="py-2 px-2 text-right text-[#3b82f6] text-xs">{car.consumption || '-'}</td>
+                    <td className="py-2 px-2">
+                      <span className={`text-xs px-1.5 py-0.5 rounded ${getBatteryTypeColor(car.battery_type)}`}>
+                        {car.battery_type || '-'}
+                      </span>
+                    </td>
+                    <td className="py-2 px-2 text-right text-gray-300 text-xs">{car.battery_capacity || '-'}</td>
+                    <td className="py-2 px-2">
+                      <span className={`text-xs px-1.5 py-0.5 rounded ${getDriveModeColor(car.drive_mode)}`}>
+                        {car.drive_mode || '-'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </>
   );
 }
