@@ -1,9 +1,14 @@
-name = "ev-cars-2026"
-compatibility_date = "2024-01-01"
+name = "frankieevcars"
+main = ".open-next/worker.js"
+compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
-[site]
-bucket = ".vercel/output/static"
+[assets]
+directory = ".open-next/assets"
 
-[env.production]
-# 生产环境变量在 Cloudflare Dashboard 中配置
+[vars]
+SUPABASE_URL = "https://ylicbfmpkziiwkfifgnf.supabase.co"
+
+# Environment variables that contain secrets should be set via the Cloudflare dashboard
+# SUPABASE_ANON_KEY - set in Cloudflare dashboard
+# SUPABASE_SERVICE_ROLE_KEY - set in Cloudflare dashboard
