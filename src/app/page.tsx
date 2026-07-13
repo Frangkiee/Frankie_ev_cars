@@ -117,13 +117,13 @@ export default function Home() {
   const maxRange = ranges.length ? Math.max(...ranges) : 0;
 
   // Count cars per month
-  const carsPerMonth = Array.from({ length: 6 }, (_, i) => {
+  const carsPerMonth = Array.from({ length: 7 }, (_, i) => {
     const m = i + 1;
     return cars.filter(c => c.month === m).length;
   });
 
-  // Available months (1-6)
-  const availableMonths = [1, 2, 3, 4, 5, 6];
+  // Available months (1-7)
+  const availableMonths = [1, 2, 3, 4, 5, 6, 7];
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#f0f0f0]">
@@ -133,13 +133,13 @@ export default function Home() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-xl font-bold tracking-tight">
-                2026年1-6月纯电动新车数据
+                2026年1-7月纯电动新车数据
               </h1>
               <p className="text-xs text-gray-500 mt-0.5">数据来源：懂车帝 newcar.dongchedi.com</p>
             </div>
             <div className="text-right">
               <div className="text-xs text-gray-500">最后更新</div>
-              <div className="text-xs text-[#00e5a0]">2026-06-25</div>
+              <div className="text-xs text-[#00e5a0]">2026-07-13</div>
             </div>
           </div>
 
@@ -169,7 +169,7 @@ export default function Home() {
               </button>
             ))}
             {/* Quarter links */}
-            {[1, 2].map(q => (
+            {[1, 2, 3].map(q => (
               <Link
                 key={`q${q}`}
                 href={`/2026/quarter/${q}`}
